@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DOP Agent Companion</title>
+  <style>
+    :root {
+    --bg: #f4f4f4;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #6b7280;
+    --border: #dcd3ff;
+    --accent-start: #143363; /* Light mode gradient start */
+    --accent-end: #2563eb;   /* Light mode gradient end */
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --chip: #dfe1e6;
+    --shadow: 0 8px 24px rgba(2,6,23,.08);
+    --hover1: #c1d1f9;
+    --hover2: #c1fdfc;
+    }
+
+    body[data-theme="dark"] {
+    --bg: #0b1220;
+    --card: #16264d;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #1f2937;
+    --chip: #0b1a38;
+    --shadow: 0 8px 28px rgba(0,0,0,.35);
+
+    /* critical: dark accents */
+    }
+/* Light mode */
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        filter: invert(0); /* default */
+    }
+
+    /* Dark mode */
+    body[data-theme="dark"] input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+        background-color: white;
+        border-radius: 50%;
+        padding: 2px;
+    }
+
+    #selectedCount, #selectedTotal {
+        font-size: 1.0rem; /* Increase to desired size */
+        font-weight: normal; /* Optional: make text bolder */
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: var(--bg); color: var(--text);
+      transition: background .2s ease, color .2s ease;
+    }
+    .container{ max-width:1200px; margin: 24px auto; padding: 0 16px; }
+
+    /* Topbar */
+    .topbar{ display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:16px; }
+    .brand{ display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px; }
+    .logo{ width:36px; height:36px; border-radius:12px; background: linear-gradient(135deg,var(--accent-start),var(--accent-end)); display:grid; place-items:center; color:#fff; box-shadow: var(--shadow); }
+    .logo svg{ width:24px; height:24px; }
+
+    .actions{ display:flex; gap:8px; align-items:center; }
+
+    .btn{ border:0; cursor:pointer; padding:10px 14px; border-radius:10px; font-weight:600; display:inline-flex; align-items:center; gap:8px; box-shadow: var(--shadow); transition: transform .06s ease, opacity .2s ease; }
+    .btn:active{ transform: translateY(1px); }
+    .btn-primary{ color:#fff; background: linear-gradient(135deg,var(--accent-start),var(--accent-end)); }
+    .btn-ghost{ background: var(--card); color: var(--text); border:1px solid var(--border); }
+    .btn-danger{ background: linear-gradient(135deg,#ef4444,#dc2626); color:#fff; }
+    .btn-success{ background: linear-gradient(135deg,#10b981,#059669); color:#fff; }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed; }
+
+    .grid{
+      display:grid; grid-template-columns: 1fr; gap:16px;
+    }
+    @media (min-width: 980px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .card{ background: var(--card); border:1px solid var(--border); border-radius:18px; padding:16px; box-shadow: var(--shadow); }
+
+    .card2{ background: var(--card); border:1px solid var(--border); border-radius:18px; padding:16px; box-shadow: var(--shadow); }
+    .card h3{ margin:0 0 10px 0; font-size:1.05rem; letter-spacing:.2px; }
+    .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .field{ display:flex; flex-direction:column; gap:6px; min-width: 160px; }
+    label{ font-size:.82rem; color: var(--muted); }
+    input[type="text"], input[type="number"], input[type="datetime-local"], input[type="file"], select{
+      background: var(--bg); color: var(--text); border:1px solid var(--border); padding:10px 12px; border-radius:12px; outline:none;
+    }
+    input::placeholder{ color: var(--muted); }
+
+    .pill{ padding:6px 10px; border-radius:10px; background: var(--chip); border:1px solid var(--border); font-size:.6rem; color: var(--text); }
+
+    .list{ display:flex; flex-direction:column; gap:8px; max-height:340px; overflow:auto; }
+    .item{ display:grid; grid-template-columns: 1fr auto; align-items:center; padding:10px; border:1px solid var(--border); border-radius:12px; background: var(--bg); }
+    .item strong{ display:block; font-size:.95rem; }
+    .sub{ color: var(--muted); font-size:.8rem; }
+
+    table{ width:100%; border-collapse: collapse; }
+    th, td{ text-align:left; padding:10px; border-bottom:1px dashed var(--border); font-size:.92rem; }
+    thead th{ position: sticky; top:0; background: var(--card); z-index:1; }
+
+    .right-col{ display:flex; flex-direction:column; gap:16px; }
+
+    /* Toast */
+    .toast{ position:fixed; right:16px; bottom:16px; display:flex; flex-direction:column; gap:8px; z-index:9999; }
+    .toast .t{ padding:12px 14px; border-radius:12px; background: var(--card); border:1px solid var(--border); box-shadow: var(--shadow); display:flex; align-items:center; gap:10px; }
+    .t.ok{ border-left:6px solid var(--success); }
+    .t.warn{ border-left:6px solid var(--warn); }
+    .t.err{ border-left:6px solid var(--danger); }
+
+    /* Footer floating button */
+    .fab{
+      position: fixed; right: 16px; bottom: 10px; z-index: 999; 
+      padding: 12px 16px; border-radius: 16px; color:#fff; background: linear-gradient(135deg,var(--accent-start),var(--accent-end));
+      box-shadow: var(--shadow); display:flex; align-items:center; gap:10px; border:0; cursor:pointer;
+    }
+
+    .fab2{
+      position: fixed; left: 16px; bottom: 10px; z-index: 999; 
+      padding: 12px 16px; border-radius: 16px; color:#ffffff; background: linear-gradient(135deg,#6ca7ff,#839aff);
+      box-shadow: var(--shadow); display:flex; align-items:center; gap:10px; border:0; cursor:pointer;
+    }
+
+
+    /* Modal */
+    .modal-backdrop{ position:fixed; inset:0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index: 1000; }
+    .modal{ width:min(680px, 92vw); background: var(--card); border:1px solid var(--border); border-radius:20px; box-shadow: var(--shadow); padding:18px; }
+    .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+
+    .muted{ color: var(--muted); font-size:.88rem; }
+    .spacer{ flex:1; }
+    .divider{ height:1px; background: var(--border); margin:12px 0; }
+
+    .badge{ font-size:1rem; background: var(--chip); border:1px solid var(--border); padding:4px 8px; border-radius:10px; }
+    .btn:hover {
+        background: linear-gradient(135deg, var(--accent-end), var(--accent-start));
+        transform: scale(1.03);
+    }
+    .btn:active {
+        transform: scale(0.98);
+    }
+    
+    .fab:hover{
+    background: linear-gradient(135deg, var(--hover1), var(--hover2));
+    transform: scale(1.03);
+    color: #000000;                /* ensure text is visible on the gradient */
+    border-color: transparent;  /* hide ghost border over gradient */
+    }
+    /* Make all button variants animate background + scale */
+    .btn,
+    .btn-primary,
+    .btn-ghost,
+    .btn-danger,
+    .btn-success {
+    transition: background .25s ease, transform .08s ease, color .25s ease, border-color .25s ease;
+    }
+
+    /* Theme-aware hover for ALL buttons */
+    .btn:hover,
+    .btn-primary:hover,
+    .btn-ghost:hover,
+    .btn-danger:hover,
+    .btn-success:hover {
+    background: linear-gradient(135deg, var(--hover1), var(--hover2));
+    transform: scale(1.03);
+    color: #000000;                /* ensure text is visible on the gradient */
+    border-color: transparent;  /* hide ghost border over gradient */
+    }
+
+    /* Optional: pressed feel */
+    .btn:active,
+    .btn-primary:active,
+    .btn-ghost:active,
+    .btn-danger:active,
+    .btn-success:active {
+    transform: scale(0.98);
+    }
+
+    #selectedCard table {
+        table-layout: fixed; /* columns stay fixed width */
+        width: 100%;         /* match card width */
+    }
+
+    #selectedCard th, 
+    #selectedCard td {
+        word-wrap: break-word; /* allow breaking long words */
+        word-break: break-word; /* break inside long text */
+        overflow-wrap: anywhere; /* allow break anywhere if needed */
+        white-space: normal; /* allow wrapping instead of staying on one line */
+    }
+    .right-col::after {
+    content: "";
+    display: block;
+    height: 3rem; /* space you want */
+    }
+    #clearSearch {
+      position: absolute;
+      right: 8px;
+      top: 48%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--text);
+      background: var(--bg);
+      padding: 0 6px;
+      display: none;
+      line-height: 1; /* prevents vertical offset */
+      border-radius: 4px; /* makes it look more like a button */
+    }
+
+    #clearSearch:hover {
+      background: var(--accent-bg);
+      color: red;
+    }
+    /* Simple centered card */
+  </style>
+</head>
+<body data-theme="light">
+
+<div id="passwordModal" class="modal-backdrop" style="display:flex; align-items:center; justify-content:center;">
+  <div class="modal" style="max-width:360px; padding:20px;">
+    <div style="display:flex; flex-direction:column; align-items:center;">
+        <div style="text-align:center;">
+        <h3>Welcome!</h3>
+        </div>
+      <input type="password" id="passwordInput" placeholder="Enter password"
+        style="width:90%; padding:10px 12px; margin:20px 0 8px 0; border-radius:12px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+      <small style="text-align:center; color:var(--text-secondary); max-width:90%;">
+        If admin hasn't given you a password, click cancel.
+      </small>
+      <div style="display:flex; justify-content:space-between; width:90%; margin-top:16px;">
+        <button id="cancelPassword" class="btn btn-ghost">Cancel</button>
+        <button id="submitPassword" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <!-- Compass icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="14 10 10 14 8 8 14 10"></polygon>
+          </svg>
+        </div>
+        <div>
+          <div>DOP Agent Companion</div>
+          <div class="muted" style="margin-top:2px">Modern, mobile-friendly CSV utility</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="themeBtn" class="btn btn-ghost" title="Toggle theme" aria-label="Toggle theme">
+          <span id="themeLabel">Light</span>
+          <!-- Moon/Sun -->
+          <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2m11-11h-2M3 12H1m16.95 7.05-1.41-1.41M6.46 6.46 5.05 5.05m12.02 0-1.41 1.41M6.46 17.54 5.05 18.95"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT COLUMN -->
+      <div class="left-col" style="display:flex; flex-direction:column; gap:16px;">
+        <!-- 1. Choose file -->
+        <section class="card">
+        <h3>Choose CSV file</h3>
+        <div class="row">
+            <!-- Hidden file input -->
+            <input id="fileInput" type="file" accept=".csv" hidden />
+
+            <!-- Custom button style label -->
+            <label for="fileInput" class="btn btn-primary">📂 Load Data</label>
+
+            <span class="pill" id="rowCount">No data loaded</span>
+
+            <button class="btn btn-primary" id="openNewEntry" style="margin-left:auto;">Add New Entry</button>
+        </div>
+        <div class="muted" style="margin-top:8px">
+            Expected headers: <code>ref_no,name,cash,date</code>.  
+            New uploads replace previous data.
+        </div>
+        </section>
+
+        <!-- 2. Filter options -->
+        <section class="card">
+          <h3>Filters</h3>
+          <div class="row">
+            <div class="field">
+              <label>Day range (ignore month/year)</label>
+              <div class="row">
+                <input id="dayMin" type="number" placeholder="From day" min="1" max="31" style="width:120px">
+                <input id="dayMax" type="number" placeholder="To day" min="1" max="31" style="width:120px">
+              </div>
+            </div>
+            <div class="field">
+              <label>Cash range</label>
+              <div class="row">
+                <input id="cashMin" type="number" step="0.01" placeholder="Min ₹" style="width:140px">
+                <input id="cashMax" type="number" step="0.01" placeholder="Max ₹" style="width:140px">
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <button id="applyFilters" class="btn btn-primary">Apply</button>
+            <button id="clearFilters" class="btn btn-ghost">Clear</button>
+          </div>
+        </section>
+
+        <!-- 3. Search -->
+        <section class="card" id="searchCard">
+          <h3>Search</h3>
+          <div class="row" style="align-items:center; gap:0.5rem;">
+            <div class="search-wrapper" style="position:relative; flex:1; min-width:200px;">
+              <input id="searchBox" type="text"
+                    placeholder="Search by ref_no or name (realtime)"
+                    style="width:100%; padding-right:2rem; box-sizing:border-box;" />
+              <span id="clearSearch">&times;</span>
+            </div>
+            <button id="addAllFiltered" class="btn btn-success" title="Add all filtered results">
+              Add all filtered
+            </button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="list" id="results"></div>
+        </section>
+
+
+
+        <!-- 6. Add New Entry trigger (shown left, modal opens) -->
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+        <!-- 5. Selected entries -->
+        <section class="card" id="selectedCard">
+          <div class="row" style="justify-content:space-between; align-items:center;">
+            <h3>Selected entries</h3>
+            <div class="row">
+              <button id="copyRefs" class="btn btn-ghost" title="Copy ref_nos">Copy ref_nos</button>
+              <button id="downloadSelectedCSV" class="btn btn-ghost" title="Download current list CSV">Download CSV</button>
+              <button id="saveToNewList" class="btn btn-primary" title="Save current list & clear">New list / Save</button>
+              
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div style="max-height:360px; overflow:auto;">
+            <table>
+              <thead>
+                <tr><th>ref_no</th><th>name</th><th>cash</th><th>date</th><th>action</th></tr>
+              </thead>
+              <tbody id="selectedTable"></tbody>
+            </table>
+          </div>
+          <div class="row" style="margin:.2rem 0 0 0;">
+            <span class="badge" id="selectedCount">0 selected</span>
+           <!-- <span class="badge" id="selectedTotal">Total: ₹0.00</span>-->
+            <button id="clearSelection" class="btn btn-danger">Clear selection</button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="row" style="justify-content:space-between; align-items:center;">
+            <div class="muted">Saved lists are kept internally and used to avoid duplicates.</div>
+            <button id="downloadAllLists" class="btn btn-ghost">Download Created Lists</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating action: Download Updated Data -->
+  <button id="downloadAllData" class="fab" title="Download all modified data">
+    <!-- Download icon -->
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download Updated Data
+  </button>
+    <div class="fab2" style="margin:.2rem 0 0 0;">
+    <span id="selectedTotal" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.4);">
+        Total: ₹0.00
+    </span>
+    </div>
+  <!-- Modal: New Entry -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Add New Entry</h3>
+        <button class="btn btn-ghost" id="closeModal">Close</button>
+      </div>
+      <div class="divider"></div>
+      <div class="row" style="flex-wrap:wrap; gap:14px;">
+        <div class="field" style="flex:1; min-width:200px;">
+          <label>Reference No</label>
+          <input type="text" id="newRef" placeholder="e.g., 020000569048" />
+        </div>
+        <div class="field" style="flex:1; min-width:200px;">
+          <label>Name</label>
+          <input type="text" id="newName" placeholder="e.g., KIRAN" />
+        </div>
+        <div class="field" style="flex:1; min-width:180px;">
+          <label>Cash (₹)</label>
+          <input type="number" id="newCash" step="0.01" placeholder="e.g., 1500" />
+        </div>
+        <div class="field" style="flex:1; min-width:220px;">
+          <label>Date & time</label>
+          <input type="datetime-local" id="newDate" />
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="row" style="justify-content:flex-end; gap:8px;">
+        <button class="btn btn-primary" id="saveNewEntry">Save entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ===== Utilities =====
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+    function toast(msg, type='ok', timeout=2800){
+      const t = document.createElement('div'); t.className = `t ${type}`; t.innerHTML = msg; $('#toast').appendChild(t);
+      setTimeout(()=>{ t.style.opacity = '0'; setTimeout(()=> t.remove(), 350); }, timeout);
+    }
+
+    function parseCSV(text){
+      // Robust-ish CSV parser handling quotes and commas
+      const rows = [];
+      let i=0, field='', row=[], inQ=false;
+      while(i < text.length){
+        const c = text[i];
+        if(inQ){
+          if(c === '"'){
+            if(text[i+1] === '"'){ field += '"'; i++; } else { inQ = false; }
+          } else { field += c; }
+        } else {
+          if(c === '"') inQ = true;
+          else if(c === ','){ row.push(field); field=''; }
+          else if(c === '\n' || c === '\r'){ if(field !== '' || row.length){ row.push(field); rows.push(row); row=[]; field=''; } }
+          else field += c;
+        }
+        i++;
+      }
+      if(field !== '' || row.length) { row.push(field); rows.push(row); }
+      return rows.filter(r => r.length && r.some(cell => cell.trim() !== ''));
+    }
+
+    function csvToObjects(csv){
+      const rows = parseCSV(csv.trim());
+      const headers = rows.shift().map(h=>h.trim());
+      return rows.map(r=>{
+        const obj={};
+        headers.forEach((h,idx)=> obj[h] = (r[idx] ?? '').trim());
+        return obj;
+      });
+    }
+
+    function objectsToCSV(arr, headers){
+      const esc = v => {
+        const s = String(v ?? '');
+        if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+        return s;
+      };
+      const lines = [];
+      lines.push(headers.join(','));
+      arr.forEach(o=> lines.push(headers.map(h=>esc(o[h])).join(',')) );
+      return lines.join('\n');
+    }
+
+    function download(filename, content, mime='text/plain'){
+      const blob = new Blob([content], {type: mime});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      setTimeout(()=> URL.revokeObjectURL(url), 500);
+    }
+
+    function parseCash(str){
+      // Input like "1,500.00 Cr." -> 1500.00
+      if(str == null) return 0;
+      const num = String(str).replace(/[^0-9.\-]/g,'');
+      return parseFloat(num||'0');
+    }
+
+    function formatCashINR(n){
+      return new Intl.NumberFormat('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n);
+    }
+
+    function parseDDMMYYYY_HHMM(s){
+      // input like 10-08-2025 15:46 -> Date
+      const m = String(s).match(/(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})/);
+      if(!m) return null;
+      const [_, dd, mm, yyyy, HH, MM] = m.map(Number);
+      return new Date(yyyy, mm-1, dd, HH, MM);
+    }
+
+    function toDDMMYYYY_HHMM(d){
+      const pad=n=> String(n).padStart(2,'0');
+      return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function dayOf(s){
+      const d = parseDDMMYYYY_HHMM(s);
+      return d? d.getDate(): null;
+    }
+
+    // ===== State =====
+    let data = []; // full dataset
+    let filtered = []; // after filters/search
+    let selection = new Map(); // ref_no -> record
+    let savedLists = []; // array of arrays of ref_no
+    let seenRefs = new Set(); // all refs that appear in any saved list
+
+    function persist(){
+      sessionStorage.setItem('dac_data', JSON.stringify(data));
+      sessionStorage.setItem('dac_saved_lists', JSON.stringify(savedLists));
+      sessionStorage.setItem('dac_seen_refs', JSON.stringify([...seenRefs]));
+    }
+
+    function restore(){
+      try{
+        const d = JSON.parse(sessionStorage.getItem('dac_data')||'null');
+        if(Array.isArray(d)) data = d;
+        const sl = JSON.parse(sessionStorage.getItem('dac_saved_lists')||'null');
+        if(Array.isArray(sl)) savedLists = sl;
+        const sr = JSON.parse(sessionStorage.getItem('dac_seen_refs')||'null');
+        if(Array.isArray(sr)) seenRefs = new Set(sr);
+      }catch{}
+      renderAll();
+    }
+
+    // ===== Rendering =====
+    function renderResults(){
+      const box = $('#results'); box.innerHTML='';
+      filtered.forEach(rec=>{
+        const div = document.createElement('div'); div.className = 'item';
+        const cashNum = parseCash(rec.cash);
+        div.innerHTML = `
+          <div>
+            <strong>${rec.ref_no}</strong>
+            <div class="sub">${rec.name} • ₹${formatCashINR(cashNum)} • ${rec.date}</div>
+          </div>
+          <div>
+            ${ seenRefs.has(rec.ref_no) ? `<span class="pill" title="Already saved in a list">Already in a list</span>` : '' }
+            <button class="btn btn-primary btn-add" data-ref="${rec.ref_no}">${ selection.has(rec.ref_no) ? 'Added' : 'Add' }</button>
+          </div>`;
+        const btn = div.querySelector('.btn-add');
+        if(selection.has(rec.ref_no)) btn.setAttribute('disabled','true');
+        if(seenRefs.has(rec.ref_no)) btn.setAttribute('disabled','true');
+        box.appendChild(div);
+      });
+    }
+
+    function renderSelection(){
+      const tbody = $('#selectedTable'); tbody.innerHTML='';
+      let total = 0;
+      selection.forEach(rec=>{
+        const tr = document.createElement('tr');
+        const cashNum = parseCash(rec.cash); total += cashNum;
+        tr.innerHTML = `<td>${rec.ref_no}</td><td>${rec.name}</td><td>₹${formatCashINR(cashNum)}</td><td>${rec.date}</td>
+          <td><button class="btn btn-ghost btn-remove" data-ref="${rec.ref_no}">❌</button></td>`;
+        tbody.appendChild(tr);
+      });
+      $('#selectedCount').textContent = `${selection.size} selected`;
+      $('#selectedTotal').textContent = `Total: ₹${formatCashINR(total)}`;
+    }
+
+    function renderRowCount(){
+      $('#rowCount').textContent = data.length ? `${data.length} rows loaded` : 'No data loaded';
+    }
+
+    function renderAll(){
+      applyFilterAndSearch();
+      renderSelection();
+      renderRowCount();
+    }
+
+    // ===== Core logic =====
+    function applyFilterAndSearch(){
+      const dMin = parseInt($('#dayMin').value||'');
+      const dMax = parseInt($('#dayMax').value||'');
+      const cMin = parseFloat($('#cashMin').value||'');
+      const cMax = parseFloat($('#cashMax').value||'');
+      const q = ($('#searchBox').value||'').trim().toLowerCase();
+
+      filtered = data.filter(r=>{
+        // day filter
+        const day = dayOf(r.date);
+        if(!isNaN(dMin) && (day==null || day < dMin)) return false;
+        if(!isNaN(dMax) && (day==null || day > dMax)) return false;
+        // cash filter
+        const cash = parseCash(r.cash);
+        if(!isNaN(cMin) && cash < cMin) return false;
+        if(!isNaN(cMax) && cash > cMax) return false;
+        // search
+        if(q){
+          const hay = `${r.ref_no} ${r.name}`.toLowerCase();
+          if(!hay.includes(q)) return false;
+        }
+        return true;
+      });
+      renderResults();
+    }
+
+    function resetFilters(){
+      $('#dayMin').value = '';
+      $('#dayMax').value = '';
+      $('#cashMin').value = '';
+      $('#cashMax').value = '';
+      applyFilterAndSearch();
+    }
+
+    // ===== Event wiring =====
+    $('#applyFilters').addEventListener('click', applyFilterAndSearch);
+    $('#clearFilters').addEventListener('click', ()=>{ resetFilters(); toast('Filters cleared','ok'); });
+    $('#searchBox').addEventListener('input', applyFilterAndSearch);
+
+    const searchBox = $('#searchBox');
+    const clearSearch = $('#clearSearch');
+
+    searchBox.addEventListener('input', () => {
+      applyFilterAndSearch();
+      clearSearch.style.display = searchBox.value ? 'block' : 'none';
+    });
+
+    clearSearch.addEventListener('click', () => {
+      searchBox.value = '';
+      clearSearch.style.display = 'none';
+      applyFilterAndSearch();
+    });
+
+
+    $('#results').addEventListener('click', (e)=>{
+      const btn = e.target.closest('.btn-add'); if(!btn) return;
+      const ref = btn.getAttribute('data-ref');
+      if(seenRefs.has(ref)) { toast('Already added to a saved list','warn'); return; }
+      const rec = data.find(r=> r.ref_no === ref);
+      if(!rec) return;
+      selection.set(ref, rec);
+      renderSelection();
+      applyFilterAndSearch();
+    });
+
+    $('#selectedTable').addEventListener('click', (e)=>{
+      const btn = e.target.closest('.btn-remove'); if(!btn) return;
+      const ref = btn.getAttribute('data-ref');
+      selection.delete(ref);
+      renderSelection();
+      applyFilterAndSearch();
+    });
+
+    $('#addAllFiltered').addEventListener('click', ()=>{
+      if(!filtered.length){ toast('No filtered results to add','warn'); return; }
+      let added = 0, skipped=0;
+      filtered.forEach(r=>{
+        if(seenRefs.has(r.ref_no)) { skipped++; return; }
+        if(!selection.has(r.ref_no)) { selection.set(r.ref_no, r); added++; }
+      });
+      renderSelection(); applyFilterAndSearch();
+      toast(`Added ${added} item(s)${skipped?`, skipped ${skipped} already in saved lists`:''}`,'ok');
+    });
+
+    $('#copyRefs').addEventListener('click', async ()=>{
+      const refs = [...selection.keys()].join(', ');
+      if(!refs){ toast('Nothing to copy','warn'); return; }
+      await navigator.clipboard.writeText(refs);
+      toast('Copied ref_nos to clipboard','ok');
+    });
+
+    $('#downloadSelectedCSV').addEventListener('click', ()=>{
+      const arr = [...selection.values()];
+      if(!arr.length){ toast('No items selected','warn'); return; }
+      const csv = objectsToCSV(arr, ['ref_no','name','cash','date']);
+      download('current_list.csv', csv, 'text/csv');
+    });
+
+    $('#saveToNewList').addEventListener('click', ()=>{
+      if(selection.size===0){ toast('No items to save','warn'); return; }
+      const refs = [...selection.keys()];
+      savedLists.push(refs);
+      refs.forEach(r=> seenRefs.add(r));
+      selection.clear();
+      persist();
+      renderAll();
+      toast(`Saved as list ${savedLists.length} & cleared current selection`,'ok');
+    });
+
+    $('#downloadAllLists').addEventListener('click', ()=>{
+      if(savedLists.length===0){ toast('No saved lists yet','warn'); return; }
+      const lines = savedLists.map((lst,i)=> `list ${i+1}: ${lst.join(', ')}`);
+      download('created_lists.txt', lines.join('\n'), 'text/plain');
+    });
+
+    $('#clearSelection').addEventListener('click', ()=>{
+      selection.clear(); renderSelection(); applyFilterAndSearch(); toast('Selection cleared','ok');
+    });
+
+    $('#downloadAllData').addEventListener('click', ()=>{
+      if(!data.length){ toast('No data loaded','warn'); return; }
+      const csv = objectsToCSV(data, ['ref_no','name','cash','date']);
+      download('updated_data.csv', csv, 'text/csv');
+    });
+
+    // File upload
+
+
+    // Flag to track if default CSV is loaded
+    let defaultLoaded = false;
+
+    async function loadDefaultCSV() {
+        if (defaultLoaded) return; // prevent re-loading
+        const defaultURL = "data/cleaned_file_2.csv"; // Local CSV path
+        try {
+            const response = await fetch(defaultURL);
+            
+            if (!response.ok) throw new Error("Failed to load default CSV");
+            const text = await response.text();
+            let objs = csvToObjects(text);
+            objs = objs.map(o => ({
+                ref_no: o.ref_no?.trim() || '',
+                name: o.name?.trim() || '',
+                cash: o.cash?.trim() || '',
+                date: o.date?.trim() || ''
+            })).filter(o => o.ref_no);
+
+            data = objs; 
+            selection.clear();
+            toast('Default CSV loaded successfully', 'ok');
+            persist(); 
+            renderAll();
+            defaultLoaded = true; // mark as loaded
+        } catch (err) {
+            console.error("Error loading default CSV:", err);
+        }
+    }
+
+    // ==================== PASSWORD CHECK =====================
+    function showPasswordModal() {
+        const modal = document.getElementById("passwordModal");
+        modal.style.display = "flex"; // Show modal
+
+        document.getElementById("submitPassword").onclick = function() {
+            const entered = document.getElementById("passwordInput").value;
+            const correctPassword = "1234"; // Change this
+
+            if (entered === correctPassword) {
+                modal.style.display = "none";
+                loadDefaultCSV(); // Load CSV after correct password
+            } else {
+                alert("Incorrect password!");
+            }
+        };
+
+        document.getElementById("cancelPassword").onclick = function() {
+            modal.style.display = "none";
+            console.log("CSV load cancelled by user.");
+        };
+    }
+
+    // Prevent CSV auto-load, wait for password
+    document.addEventListener('DOMContentLoaded', () => {
+        showPasswordModal();
+    });
+
+
+
+    // Handle manual file upload (replaces current data)
+    $('#fileInput').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; 
+    if (!f) return;
+    const text = await f.text();
+    let objs = csvToObjects(text);
+    objs = objs.map(o => ({
+        ref_no: o.ref_no?.trim() || '',
+        name: o.name?.trim() || '',
+        cash: o.cash?.trim() || '',
+        date: o.date?.trim() || ''
+    })).filter(o => o.ref_no);
+
+    data = objs; 
+    selection.clear();
+    toast('New CSV loaded successfully', 'ok');
+    persist(); 
+    renderAll();
+    });
+
+
+
+
+    // New Entry modal
+    const modal = $('#modal');
+    function openModal(){ modal.style.display = 'flex'; modal.setAttribute('aria-hidden','false'); $('#newRef').focus(); }
+    function closeModal(){ modal.style.display = 'none'; modal.setAttribute('aria-hidden','true'); }
+    $('#openNewEntry').addEventListener('click', openModal);
+    $('#closeModal').addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.style.display==='flex') closeModal(); });
+
+    $('#saveNewEntry').addEventListener('click', ()=>{
+      const ref = $('#newRef').value.trim();
+      const name = $('#newName').value.trim();
+      const cash = parseFloat($('#newCash').value||'0');
+      const dtRaw = $('#newDate').value; // yyyy-mm-ddTHH:MM
+      if(!ref || !name || !dtRaw){ toast('Please fill Reference, Name, and Date','err'); return; }
+      if(data.some(r=> r.ref_no === ref)) { toast('Reference already exists in dataset','err'); return; }
+      const d = new Date(dtRaw);
+      const rec = { ref_no: ref, name, cash: `${formatCashINR(cash)} Cr.`, date: toDDMMYYYY_HHMM(d)};
+      data.push(rec);
+      persist(); renderAll(); closeModal();
+      // clear fields
+      $('#newRef').value=''; $('#newName').value=''; $('#newCash').value=''; $('#newDate').value='';
+      toast('New entry added','ok');
+    });
+
+    // Theme toggle
+    const themeBtn = $('#themeBtn');
+    function setTheme(mode){ document.body.setAttribute('data-theme', mode); $('#themeLabel').textContent = mode === 'dark' ? 'Dark' : 'Light'; }
+    themeBtn.addEventListener('click', ()=>{
+      const now = document.body.getAttribute('data-theme');
+      const next = now === 'dark' ? 'light' : 'dark';
+      setTheme(next);
+    });
+
+    // Init
+    restore();
+    setTheme('light');
+
+  </script>
+</body>
+</html>
