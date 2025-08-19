@@ -286,7 +286,7 @@
             <button class="btn btn-primary" id="openNewEntry" style="margin-left:auto;">Add New Entry</button>
         </div>
         <div class="muted" style="margin-top:8px">
-            Expected headers: <code>ref_no,name,cash,date</code>.  
+            Expected headers: <code>acc_no,name,cash,date</code>.  
             New uploads replace previous data.
         </div>
         </section>
@@ -321,7 +321,7 @@
           <div class="row" style="align-items:center; gap:0.5rem;">
             <div class="search-wrapper" style="position:relative; flex:1; min-width:200px;">
               <input id="searchBox" type="text"
-                    placeholder="Search by ref_no or name (realtime)"
+                    placeholder="Search by acc_no or name (realtime)"
                     style="width:100%; padding-right:2rem; box-sizing:border-box;" />
               <span id="clearSearch">&times;</span>
             </div>
@@ -346,7 +346,7 @@
           <div class="row" style="justify-content:space-between; align-items:center;">
             <h3>Selected entries</h3>
             <div class="row">
-              <button id="copyRefs" class="btn btn-ghost" title="Copy ref_nos">Copy ref_nos</button>
+              <button id="copyRefs" class="btn btn-ghost" title="Copy acc_nos">Copy acc_nos</button>
               <button id="downloadSelectedCSV" class="btn btn-ghost" title="Download current list CSV">Download CSV</button>
               <button id="saveToNewList" class="btn btn-primary" title="Save current list & clear">New list / Save</button>
               
@@ -357,7 +357,7 @@
           <div style="max-height:360px; overflow:auto;">
             <table>
               <thead>
-                <tr><th>ref_no</th><th>name</th><th>cash</th><th>date</th><th>action</th></tr>
+                <tr><th>acc_no</th><th>name</th><th>cash</th><th>date</th><th>action</th></tr>
               </thead>
               <tbody id="selectedTable"></tbody>
             </table>
@@ -519,8 +519,8 @@
     // ===== State =====
     let data = []; // full dataset
     let filtered = []; // after filters/search
-    let selection = new Map(); // ref_no -> record
-    let savedLists = []; // array of arrays of ref_no
+    let selection = new Map(); // acc_no -> record
+    let savedLists = []; // array of arrays of acc_no
     let seenRefs = new Set(); // all refs that appear in any saved list
 
     function persist(){
@@ -549,16 +549,16 @@
         const cashNum = parseCash(rec.cash);
         div.innerHTML = `
           <div>
-            <strong>${rec.ref_no}</strong>
+            <strong>${rec.acc_no}</strong>
             <div class="sub">${rec.name} • ₹${formatCashINR(cashNum)} • ${rec.date}</div>
           </div>
           <div>
-            ${ seenRefs.has(rec.ref_no) ? `<span class="pill" title="Already saved in a list">Already in a list</span>` : '' }
-            <button class="btn btn-primary btn-add" data-ref="${rec.ref_no}">${ selection.has(rec.ref_no) ? 'Added' : 'Add' }</button>
+            ${ seenRefs.has(rec.acc_no) ? `<span class="pill" title="Already saved in a list">Already in a list</span>` : '' }
+            <button class="btn btn-primary btn-add" data-ref="${rec.acc_no}">${ selection.has(rec.acc_no) ? 'Added' : 'Add' }</button>
           </div>`;
         const btn = div.querySelector('.btn-add');
-        if(selection.has(rec.ref_no)) btn.setAttribute('disabled','true');
-        if(seenRefs.has(rec.ref_no)) btn.setAttribute('disabled','true');
+        if(selection.has(rec.acc_no)) btn.setAttribute('disabled','true');
+        if(seenRefs.has(rec.acc_no)) btn.setAttribute('disabled','true');
         box.appendChild(div);
       });
     }
@@ -569,8 +569,8 @@
       selection.forEach(rec=>{
         const tr = document.createElement('tr');
         const cashNum = parseCash(rec.cash); total += cashNum;
-        tr.innerHTML = `<td>${rec.ref_no}</td><td>${rec.name}</td><td>₹${formatCashINR(cashNum)}</td><td>${rec.date}</td>
-          <td><button class="btn btn-ghost btn-remove" data-ref="${rec.ref_no}">❌</button></td>`;
+        tr.innerHTML = `<td>${rec.acc_no}</td><td>${rec.name}</td><td>₹${formatCashINR(cashNum)}</td><td>${rec.date}</td>
+          <td><button class="btn btn-ghost btn-remove" data-ref="${rec.acc_no}">❌</button></td>`;
         tbody.appendChild(tr);
       });
       $('#selectedCount').textContent = `${selection.size} selected`;
@@ -606,7 +606,7 @@
         if(!isNaN(cMax) && cash > cMax) return false;
         // search
         if(q){
-          const hay = `${r.ref_no} ${r.name}`.toLowerCase();
+          const hay = `${r.acc_no} ${r.name}`.toLowerCase();
           if(!hay.includes(q)) return false;
         }
         return true;
@@ -646,7 +646,7 @@
       const btn = e.target.closest('.btn-add'); if(!btn) return;
       const ref = btn.getAttribute('data-ref');
       if(seenRefs.has(ref)) { toast('Already added to a saved list','warn'); return; }
-      const rec = data.find(r=> r.ref_no === ref);
+      const rec = data.find(r=> r.acc_no === ref);
       if(!rec) return;
       selection.set(ref, rec);
       renderSelection();
@@ -665,8 +665,8 @@
       if(!filtered.length){ toast('No filtered results to add','warn'); return; }
       let added = 0, skipped=0;
       filtered.forEach(r=>{
-        if(seenRefs.has(r.ref_no)) { skipped++; return; }
-        if(!selection.has(r.ref_no)) { selection.set(r.ref_no, r); added++; }
+        if(seenRefs.has(r.acc_no)) { skipped++; return; }
+        if(!selection.has(r.acc_no)) { selection.set(r.acc_no, r); added++; }
       });
       renderSelection(); applyFilterAndSearch();
       toast(`Added ${added} item(s)${skipped?`, skipped ${skipped} already in saved lists`:''}`,'ok');
@@ -676,13 +676,13 @@
       const refs = [...selection.keys()].join(', ');
       if(!refs){ toast('Nothing to copy','warn'); return; }
       await navigator.clipboard.writeText(refs);
-      toast('Copied ref_nos to clipboard','ok');
+      toast('Copied acc_nos to clipboard','ok');
     });
 
     $('#downloadSelectedCSV').addEventListener('click', ()=>{
       const arr = [...selection.values()];
       if(!arr.length){ toast('No items selected','warn'); return; }
-      const csv = objectsToCSV(arr, ['ref_no','name','cash','date']);
+      const csv = objectsToCSV(arr, ['acc_no','name','cash','date']);
       download('current_list.csv', csv, 'text/csv');
     });
 
@@ -709,7 +709,7 @@
 
     $('#downloadAllData').addEventListener('click', ()=>{
       if(!data.length){ toast('No data loaded','warn'); return; }
-      const csv = objectsToCSV(data, ['ref_no','name','cash','date']);
+      const csv = objectsToCSV(data, ['acc_no','name','cash','date']);
       download('updated_data.csv', csv, 'text/csv');
     });
 
@@ -729,11 +729,11 @@
             const text = await response.text();
             let objs = csvToObjects(text);
             objs = objs.map(o => ({
-                ref_no: o.ref_no?.trim() || '',
+                acc_no: o.acc_no?.trim() || '',
                 name: o.name?.trim() || '',
                 cash: o.cash?.trim() || '',
                 date: o.date?.trim() || ''
-            })).filter(o => o.ref_no);
+            })).filter(o => o.acc_no);
 
             data = objs; 
             selection.clear();
@@ -783,11 +783,11 @@
     const text = await f.text();
     let objs = csvToObjects(text);
     objs = objs.map(o => ({
-        ref_no: o.ref_no?.trim() || '',
+        acc_no: o.acc_no?.trim() || '',
         name: o.name?.trim() || '',
         cash: o.cash?.trim() || '',
         date: o.date?.trim() || ''
-    })).filter(o => o.ref_no);
+    })).filter(o => o.acc_no);
 
     data = objs; 
     selection.clear();
@@ -814,9 +814,9 @@
       const cash = parseFloat($('#newCash').value||'0');
       const dtRaw = $('#newDate').value; // yyyy-mm-ddTHH:MM
       if(!ref || !name || !dtRaw){ toast('Please fill Reference, Name, and Date','err'); return; }
-      if(data.some(r=> r.ref_no === ref)) { toast('Reference already exists in dataset','err'); return; }
+      if(data.some(r=> r.acc_no === ref)) { toast('Reference already exists in dataset','err'); return; }
       const d = new Date(dtRaw);
-      const rec = { ref_no: ref, name, cash: `${formatCashINR(cash)} Cr.`, date: toDDMMYYYY_HHMM(d)};
+      const rec = { acc_no: ref, name, cash: `${formatCashINR(cash)} Cr.`, date: toDDMMYYYY_HHMM(d)};
       data.push(rec);
       persist(); renderAll(); closeModal();
       // clear fields
